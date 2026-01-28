@@ -1,0 +1,742 @@
+// Prisma schema for DrMigrate Azure Sync
+// Using SQLite for local/portable deployment
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AZURE CONFIGURATION
+// ============================================
+
+model AzureConfig {
+  id                String   @id @default("default")
+  tenantId          String?
+  clientId          String?
+  clientSecret      String?  // Encrypted in production
+  subscriptionId    String?
+  resourceGroup     String?
+  migrateProjectName String?
+  location          String   @default("eastus")
+  vaultName         String?  // Recovery Services Vault
+  vaultResourceGroup String?
+  isConfigured      Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ============================================
+// DATA SOURCES
+// ============================================
+
+model DataSource {
+  id               String    @id @default(cuid())
+  name             String
+  type             String    // 'database' | 'csv' | 'api' | 'azure-migrate'
+  connectionString String?
+  apiEndpoint      String?
+  apiKey           String?
+  tableName        String?   // For database sources
+  status           String    @default("disconnected") // 'connected' | 'disconnected' | 'error'
+  lastSyncAt       DateTime?
+  lastError        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  machines         ExternalMachine[]
+  importJobs       ImportJob[]
+}
+
+model ImportJob {
+  id               String    @id @default(cuid())
+  sourceId         String
+  source           DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  status           String    @default("pending") // 'pending' | 'running' | 'completed' | 'failed'
+  totalRecords     Int       @default(0)
+  processedRecords Int       @default(0)
+  errorCount       Int       @default(0)
+  errors           String?   // JSON array of errors
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+}
+
+// ============================================
+// MACHINES
+// ============================================
+
+model ExternalMachine {
+  id              String     @id @default(cuid())
+  sourceId        String
+  source          DataSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  hostname        String
+  ipAddresses     String     // JSON array
+  operatingSystem String?
+  cpuCores        Int?
+  memoryMB        Int?
+  diskSizeGB      Int?
+  tags            String?    // JSON object
+  rawData         String?    // Original data from source (JSON)
+  importedAt      DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  groupMachines   GroupMachine[]
+
+  @@index([hostname])
+  @@index([sourceId])
+}
+
+// Store discovered machines from Azure Migrate (cached)
+model DiscoveredMachine {
+  id                String   @id @default(cuid())
+  azureMigrateId    String   @unique
+  siteId            String
+  siteName          String?
+  displayName       String
+  hostName          String?
+  ipAddresses       String   // JSON array
+  operatingSystem   String?
+  cpuCores          Int?
+  memoryMB          Int?
+  diskCount         Int?
+  diskSizeGB        Int?
+  powerState        String?
+  vCenterName       String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  discoveredAt      DateTime @default(now())
+
+  groupMachines     GroupMachine[]
+
+  @@index([displayName])
+  @@index([siteId])
+}
+
+// ============================================
+// ASSESSMENT GROUPS
+// ============================================
+
+model AssessmentGroup {
+  id              String    @id @default(cuid())
+  azureGroupId    String?   @unique // ID from Azure Migrate
+  name            String
+  description     String?
+  status          String    @default("created") // 'created' | 'assessing' | 'assessed' | 'replicating'
+  machineCount    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  machines        GroupMachine[]
+  assessments     Assessment[]
+}
+
+model GroupMachine {
+  id                  String    @id @default(cuid())
+  groupId             String
+  group               AssessmentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  machineType         String    @default("discovered") // 'discovered' | 'external'
+  discoveredMachineId String?
+  discoveredMachine   DiscoveredMachine? @relation(fields: [discoveredMachineId], references: [id], onDelete: Cascade)
+  externalMachineId   String?
+  externalMachine     ExternalMachine? @relation(fields: [externalMachineId], references: [id], onDelete: Cascade)
+  addedAt             DateTime @default(now())
+
+  @@unique([groupId, discoveredMachineId])
+  @@unique([groupId, externalMachineId])
+  @@index([groupId])
+}
+
+// ============================================
+// ASSESSMENTS
+// ============================================
+
+model Assessment {
+  id               String    @id @default(cuid())
+  azureAssessmentId String?  @unique
+  groupId          String
+  group            AssessmentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  name             String
+  status           String    @default("Created") // 'Created' | 'Running' | 'Completed' | 'Failed'
+  azureLocation    String
+  vmSize           String?
+  currency         String    @default("USD")
+  sizingCriterion  String    @default("PerformanceBased")
+  reservedInstance String    @default("None")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  completedAt      DateTime?
+
+  results          AssessmentResult[]
+}
+
+model AssessmentResult {
+  id                 String     @id @default(cuid())
+  assessmentId       String
+  assessment         Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  machineId          String
+  machineName        String
+  readiness          String     // 'Ready' | 'ReadyWithConditions' | 'NotReady' | 'Unknown'
+  suitability        String?
+  monthlyCostEstimate Float     @default(0)
+  recommendedSize    String?
+  issues             String?    // JSON array of issues
+  createdAt          DateTime   @default(now())
+
+  @@index([assessmentId])
+}
+
+// ============================================
+// REPLICATION
+// ============================================
+
+model ReplicationItem {
+  id                  String   @id @default(cuid())
+  azureReplicationId  String?  @unique
+  machineId           String
+  machineName         String
+  sourceServerId      String?
+  status              String   @default("Enabling") // 'Enabling' | 'InitialReplication' | 'Protected' | 'Failed' | 'Cancelled' | 'LocalOnly' | 'AzureEnableFailed'
+  healthStatus        String   @default("None")     // 'Normal' | 'Warning' | 'Critical' | 'None'
+  replicationProgress Int?
+  lastSyncTime        DateTime?
+  
+  // Target configuration
+  targetResourceGroup     String
+  targetVnetId            String
+  targetSubnetName        String
+  targetVmSize            String
+  targetStorageAccountId  String
+  availabilityZone        String?
+  availabilitySetId       String?
+  licenseType             String   @default("NoLicenseType")
+  tags                    String?  // JSON object
+
+  // Azure Site Recovery references
+  azureProtectedItemId    String?  @unique  // Full ARM resource ID of protected item
+  vaultName               String?            // Recovery Services vault name
+  fabricName              String?            // ASR fabric name
+  containerName           String?            // ASR protection container name
+
+  // Test failover
+  testFailoverStatus      String?
+  lastTestFailoverTime    DateTime?
+
+  healthErrors            String?  // JSON array
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  @@index([status])
+  @@index([azureProtectedItemId])
+}
+
+// ============================================
+// ACTIVITY LOG
+// ============================================
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  type        String   // 'assessment' | 'replication' | 'import' | 'discovery' | 'config'
+  action      String   // 'created' | 'completed' | 'failed' | 'started' | etc.
+  title       String
+  description String?
+  status      String   @default("info") // 'success' | 'warning' | 'error' | 'info'
+  entityType  String?  // 'group' | 'machine' | 'assessment' | etc.
+  entityId    String?
+  metadata    String?  // JSON object for additional data
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([type])
+}
+
+// ============================================
+// LIFT AND CLEANSE MODULE
+// ============================================
+
+// Script Library - stores both built-in and custom scripts
+model LiftCleanseScript {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  content     String   // The actual script content
+  
+  // Script metadata
+  scriptType  String   // 'powershell' | 'bash'
+  targetOs    String   // 'windows' | 'linux' | 'both'
+  category    String   // 'cleanup' | 'install' | 'configure' | 'diagnostic' | 'custom'
+  tags        String?  // JSON array of tags for filtering
+  
+  // Script configuration
+  parameters  String?  // JSON: [{ "key": "PackageName", "description": "...", "required": true }]
+  timeout     Int      @default(3600)  // Execution timeout in seconds (max 5400 = 90 min)
+  runAsAdmin  Boolean  @default(true)  // Run with elevated privileges
+  
+  // Security
+  riskLevel   String   @default("low")  // 'low' | 'medium' | 'high' | 'critical'
+  securityScan String? // JSON: security scan results
+  approvedBy  String?  // User who approved (for high-risk scripts)
+  approvedAt  DateTime?
+  
+  // Ownership & Sharing
+  isBuiltIn   Boolean  @default(false) // System-provided vs user-created
+  isShared    Boolean  @default(false) // Shared with organization
+  createdBy   String?  // User who created (null for built-in)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  executions  ScriptExecution[]
+  schedules   ScriptSchedule[]
+
+  @@index([category])
+  @@index([scriptType])
+  @@index([isBuiltIn])
+}
+
+// Script Execution - a single execution job (can target multiple VMs)
+model ScriptExecution {
+  id          String   @id @default(cuid())
+  
+  // Script reference
+  scriptId    String?
+  script      LiftCleanseScript? @relation(fields: [scriptId], references: [id])
+  scriptName  String   // Denormalized for history
+  
+  // For ad-hoc scripts (not saved to library)
+  adHocScript String?  // Script content if ad-hoc
+  adHocType   String?  // 'powershell' | 'bash'
+  
+  // Execution metadata
+  status      String   @default("pending") // 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+  initiatedBy String?  // User who started the execution
+  parameters  String?  // JSON: { "PackageName": "nginx", "Version": "1.0" }
+  
+  // Concurrency settings
+  maxParallel Int      @default(5)  // Max concurrent VM executions
+  
+  // Scheduling reference (if scheduled)
+  scheduleId  String?
+  schedule    ScriptSchedule? @relation(fields: [scheduleId], references: [id])
+  
+  // Timing
+  startedAt   DateTime?
+  completedAt DateTime?
+  
+  // Summary
+  totalTargets    Int @default(0)
+  successCount    Int @default(0)
+  failedCount     Int @default(0)
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  targets     ScriptExecutionTarget[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([scriptId])
+}
+
+// Execution Target - per-VM execution record
+model ScriptExecutionTarget {
+  id            String   @id @default(cuid())
+  
+  // Execution reference
+  executionId   String
+  execution     ScriptExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  
+  // Target VM details
+  vmId          String   // Azure resource ID
+  vmName        String
+  resourceGroup String
+  subscriptionId String
+  osType        String   // 'windows' | 'linux'
+  
+  // Execution status for this specific target
+  status        String   @default("pending") // 'pending' | 'running' | 'completed' | 'failed' | 'cancelled' | 'skipped'
+  exitCode      Int?
+  errorMessage  String?  // Error message if failed
+  
+  // Output capture (stored after completion)
+  stdout        String?  // Standard output (full)
+  stderr        String?  // Standard error (full)
+  
+  // Azure tracking
+  azureRunCommandName String?  // Run command resource name
+  azureOperationUrl   String?  // For polling async operations
+  
+  // Timing
+  queuedAt      DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([executionId])
+  @@index([vmId])
+  @@index([status])
+}
+
+// Script Scheduling
+model ScriptSchedule {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Script reference
+  scriptId    String
+  script      LiftCleanseScript @relation(fields: [scriptId], references: [id])
+  
+  // Schedule configuration
+  scheduleType String  // 'once' | 'recurring'
+  cronExpression String? // For recurring: "0 2 * * *" (daily at 2 AM)
+  runAt        DateTime? // For one-time: specific datetime
+  timezone     String   @default("UTC")
+  
+  // Target VMs (JSON for targeting rules)
+  targetConfig String   // JSON: { "type": "explicit|tag|resourceGroup", "values": [...] }
+  
+  // Execution settings
+  parameters   String?  // JSON: parameter values
+  maxParallel  Int      @default(5)
+  
+  // Status
+  isEnabled    Boolean  @default(true)
+  lastRunAt    DateTime?
+  nextRunAt    DateTime?
+  lastRunStatus String? // 'success' | 'partial' | 'failed'
+  
+  // Ownership
+  createdBy    String?
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  executions   ScriptExecution[]
+
+  @@index([isEnabled])
+  @@index([nextRunAt])
+}
+
+// VM Groups for targeting
+model VMGroup {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Grouping type
+  groupType   String   // 'static' | 'dynamic'
+  
+  // For static groups: explicit VM list
+  vmIds       String?  // JSON array of VM resource IDs
+  
+  // For dynamic groups: filter criteria
+  filterType  String?  // 'tag' | 'resourceGroup' | 'subscription'
+  filterKey   String?  // Tag key or resource group name
+  filterValue String?  // Tag value (for tags)
+  
+  // Cached member count
+  memberCount Int      @default(0)
+  lastRefreshed DateTime?
+  
+  // Ownership
+  createdBy   String?
+  
+  // Timestamps
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([groupType])
+}
+
+// ============================================
+// VALIDATION TESTS
+// ============================================
+
+// Global Test Definition
+model ValidationTest {
+  id              String   @id @default(cuid())
+  
+  // Test metadata
+  name            String
+  description     String?
+  category        String   // 'network' | 'service' | 'storage' | 'security' | 'application' | 'custom'
+  
+  // Script content
+  scriptType      String   // 'powershell' | 'bash'
+  targetOs        String   // 'windows' | 'linux' | 'both'
+  script          String   // The actual test script
+  scriptBash      String?  // Alternative bash script for 'both' OS type
+  
+  // Parameters schema - JSON array of parameter definitions
+  // [{ key: string, label: string, type: 'string'|'number'|'boolean', required: boolean, default?: any, placeholder?: string }]
+  parameters      String?
+  
+  // Pass/Fail criteria
+  expectedExitCode Int     @default(0)     // Exit code that means "pass"
+  outputContains   String?                  // Output must contain this to pass (optional)
+  outputNotContains String?                 // Output must NOT contain this to pass (optional)
+  
+  // Timeout
+  timeout         Int      @default(300)   // seconds
+  
+  // Built-in vs custom
+  isBuiltIn       Boolean  @default(false)
+  isShared        Boolean  @default(true)
+  createdBy       String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  assignments     VmTestAssignment[]
+  suiteTests      TestSuiteTest[]
+  
+  @@index([category])
+  @@index([targetOs])
+  @@index([isBuiltIn])
+}
+
+// Test Suite - Group multiple tests together
+model TestSuite {
+  id              String   @id @default(cuid())
+  
+  name            String
+  description     String?
+  
+  // Configuration
+  runInParallel   Boolean  @default(false)  // Run tests in parallel or sequential
+  stopOnFailure   Boolean  @default(false)  // Stop suite if a test fails
+  
+  // Built-in vs custom
+  isBuiltIn       Boolean  @default(false)
+  isShared        Boolean  @default(true)
+  createdBy       String?
+  
+  // Timestamps
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  tests           TestSuiteTest[]
+  assignments     VmSuiteAssignment[]
+  
+  @@index([isBuiltIn])
+}
+
+// Test Suite Tests - Tests within a suite with order
+model TestSuiteTest {
+  id        String   @id @default(cuid())
+  
+  suiteId   String
+  suite     TestSuite @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  
+  testId    String
+  test      ValidationTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  // Order in the suite
+  order     Int      @default(0)
+  
+  // Override parameters for this test in this suite
+  parameterOverrides String?  // JSON object
+  
+  @@unique([suiteId, testId])
+  @@index([suiteId])
+}
+
+// VM Test Assignment - Individual test assigned to VM
+model VmTestAssignment {
+  id            String   @id @default(cuid())
+  
+  // VM reference (Azure resource ID)
+  vmId          String
+  vmName        String
+  resourceGroup String
+  subscriptionId String
+  
+  // Test reference
+  testId        String
+  test          ValidationTest @relation(fields: [testId], references: [id], onDelete: Cascade)
+  
+  // Filled-in parameters for this VM
+  parameters    String?  // JSON object with actual values
+  
+  // Configuration
+  isEnabled     Boolean  @default(true)
+  
+  // Scheduling
+  scheduleType  String   @default("manual")  // 'manual' | 'interval' | 'cron'
+  intervalMinutes Int?                        // For interval: run every N minutes
+  cronExpression String?                      // For cron: "0 */6 * * *"
+  nextRunAt     DateTime?
+  
+  // Last execution status (denormalized for quick display)
+  lastStatus    String?  // 'passed' | 'failed' | 'warning' | 'error' | 'running' | 'pending'
+  lastRunAt     DateTime?
+  lastDuration  Int?     // milliseconds
+  lastOutput    String?  // Truncated output for quick view
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  results       VmTestResult[]
+  
+  @@unique([vmId, testId])  // One test assignment per VM
+  @@index([vmId])
+  @@index([testId])
+  @@index([lastStatus])
+  @@index([nextRunAt])
+}
+
+// VM Suite Assignment - Test suite assigned to VM
+model VmSuiteAssignment {
+  id            String   @id @default(cuid())
+  
+  // VM reference
+  vmId          String
+  vmName        String
+  resourceGroup String
+  subscriptionId String
+  
+  // Suite reference
+  suiteId       String
+  suite         TestSuite @relation(fields: [suiteId], references: [id], onDelete: Cascade)
+  
+  // Configuration
+  isEnabled     Boolean  @default(true)
+  
+  // Scheduling
+  scheduleType  String   @default("manual")
+  intervalMinutes Int?
+  cronExpression String?
+  nextRunAt     DateTime?
+  
+  // Last execution status
+  lastStatus    String?  // 'passed' | 'failed' | 'partial' | 'running'
+  lastRunAt     DateTime?
+  passedCount   Int      @default(0)
+  failedCount   Int      @default(0)
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  results       VmSuiteResult[]
+  
+  @@unique([vmId, suiteId])
+  @@index([vmId])
+  @@index([suiteId])
+  @@index([nextRunAt])
+}
+
+// VM Test Result - Individual test execution result
+model VmTestResult {
+  id            String   @id @default(cuid())
+  
+  // Assignment reference
+  assignmentId  String
+  assignment    VmTestAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  // Suite result reference (if run as part of suite)
+  suiteResultId String?
+  suiteResult   VmSuiteResult? @relation(fields: [suiteResultId], references: [id], onDelete: SetNull)
+  
+  // Result
+  status        String   // 'passed' | 'failed' | 'warning' | 'error' | 'skipped'
+  exitCode      Int?
+  stdout        String?
+  stderr        String?
+  duration      Int?     // milliseconds
+  
+  // Pass/fail reason
+  failureReason String?  // Why it failed (exit code, output mismatch, timeout)
+  
+  // Timing
+  executedAt    DateTime @default(now())
+  
+  @@index([assignmentId])
+  @@index([suiteResultId])
+  @@index([executedAt])
+  @@index([status])
+}
+
+// VM Suite Result - Suite execution result
+model VmSuiteResult {
+  id            String   @id @default(cuid())
+  
+  // Assignment reference
+  assignmentId  String
+  assignment    VmSuiteAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  
+  // Result
+  status        String   // 'passed' | 'failed' | 'partial' | 'running'
+  totalTests    Int
+  passedCount   Int      @default(0)
+  failedCount   Int      @default(0)
+  skippedCount  Int      @default(0)
+  
+  // Timing
+  duration      Int?     // milliseconds
+  startedAt     DateTime @default(now())
+  completedAt   DateTime?
+  
+  // Relations
+  testResults   VmTestResult[]
+  
+  @@index([assignmentId])
+  @@index([startedAt])
+}
+
+// Test Notification Configuration
+model TestNotification {
+  id            String   @id @default(cuid())
+  
+  name          String
+  isEnabled     Boolean  @default(true)
+  
+  // Trigger conditions
+  triggerOn     String   // 'any_failure' | 'consecutive_failures' | 'status_change'
+  consecutiveCount Int?  // For consecutive_failures: how many before alert
+  
+  // Scope
+  scopeType     String   // 'all' | 'vm' | 'test' | 'suite'
+  scopeId       String?  // VM ID, test ID, or suite ID (null for 'all')
+  
+  // Notification method
+  notificationType String // 'webhook' | 'email' | 'activity_log'
+  webhookUrl    String?
+  emailTo       String?  // Comma-separated emails
+  
+  // Message template
+  messageTemplate String?
+  
+  // Rate limiting
+  cooldownMinutes Int    @default(60)  // Don't notify again within N minutes
+  lastNotifiedAt DateTime?
+  
+  // Ownership
+  createdBy     String?
+  
+  // Timestamps
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([isEnabled])
+  @@index([scopeType, scopeId])
+}

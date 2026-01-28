@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Dr Migrate Theme - Blue/Purple Gradient */
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    
+    /* Primary - Blue */
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary */
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 222 47% 11%;
+    
+    /* Muted */
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
+    
+    /* Accent - Purple */
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Border & Input */
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 217 91% 60%;
+    --radius: 0.5rem;
+    
+    /* Sidebar - White/Light */
+    --sidebar-bg: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-muted: 210 20% 96%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-section: 217 91% 60%;
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+    --card: 224 71% 8%;
+    --card-foreground: 210 40% 98%;
+    --popover: 224 71% 8%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 217 91% 60%;
+    
+    --sidebar-bg: 224 71% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-muted: 217 33% 17%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-section: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Dr Migrate Gradient Border - Blue to Purple */
+.drm-gradient-border {
+  border-bottom: 3px solid;
+  border-image-source: linear-gradient(
+    90deg,
+    #4F9CF9 0%,
+    #6B8DE3 25%,
+    #8B7BCF 50%,
+    #A66BBB 75%,
+    #8B5CF6 100%
+  );
+  border-image-slice: 1;
+}
+
+/* Dr Migrate Button Styles - Blue/Purple Gradient */
+.drm-btn-primary {
+  @apply text-white font-medium px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98];
+  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+}
+
+.drm-btn-primary:hover {
+  background: linear-gradient(90deg, #3B8AE8 0%, #7C4DE5 100%);
+}
+
+.drm-btn-secondary {
+  @apply text-white font-medium px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98];
+  background: linear-gradient(90deg, #6B8DE3 0%, #A66BBB 100%);
+}
+
+.drm-btn-secondary:hover {
+  background: linear-gradient(90deg, #5A7CD2 0%, #9558AA 100%);
+}
+
+.drm-btn-tertiary {
+  @apply text-white font-medium px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98];
+  background: linear-gradient(90deg, #8B7BCF 0%, #8B5CF6 100%);
+}
+
+.drm-btn-tertiary:hover {
+  background: linear-gradient(90deg, #7A6ABE 0%, #7A4BE5 100%);
+}
+
+/* Progress bar gradient - Blue to Purple */
+.drm-progress-gradient {
+  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+}
+
+/* Card hover effects */
+.drm-card {
+  @apply bg-white rounded-xl border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-200;
+}
+
+.drm-card-metric {
+  @apply bg-white rounded-xl border border-gray-100 p-6 transition-all duration-200 hover:shadow-lg hover:border-blue-200;
+}
+
+/* Stepper styles */
+.drm-step-completed {
+  @apply text-blue-500;
+}
+
+.drm-step-active {
+  @apply text-primary;
+}
+
+.drm-step-upcoming {
+  @apply text-gray-400;
+}
+
+.drm-stepper-line {
+  @apply w-12 h-0.5 bg-gray-200 mx-2;
+}
+
+.drm-stepper-line-active {
+  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-muted-foreground/20 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted-foreground/40;
+}
+
+/* Sidebar Scrollbar */
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Insights Button - Gradient */
+.drm-insights-btn {
+  @apply text-white font-medium px-5 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all;
+  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+}
+
+.drm-insights-btn:hover {
+  background: linear-gradient(90deg, #3B8AE8 0%, #7C4DE5 100%);
+}
+
+/* Section Cards */
+.drm-section-card {
+  @apply bg-white rounded-xl border border-gray-100 overflow-hidden;
+}
+
+.drm-section-header {
+  @apply text-lg font-semibold text-gray-900 px-6 py-4 border-b border-gray-100;
+}
+
+/* License Card - Blue/Purple theme */
+.drm-license-card {
+  @apply rounded-xl border p-6;
+  background: linear-gradient(135deg, rgba(79, 156, 249, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border-color: rgba(79, 156, 249, 0.3);
+}
+
+/* Workflow Cards */
+.drm-workflow-card {
+  @apply bg-white rounded-xl border-2 p-5 transition-all duration-200;
+}
+
+.drm-workflow-card-completed {
+  @apply border-blue-300 bg-blue-50/30;
+}
+
+.drm-workflow-card-active {
+  @apply border-purple-400 shadow-lg;
+  border-image-source: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+}
+
+.drm-workflow-card-pending {
+  @apply border-gray-200;
+}
+
+/* Gradient text */
+.drm-gradient-text {
+  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}

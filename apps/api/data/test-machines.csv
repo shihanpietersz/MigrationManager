@@ -1,0 +1,26 @@
+hostname,ip_address,operating_system,cpu_cores,memory_mb,disk_size_gb
+web-server-01,10.0.1.10,Windows Server 2022,4,8192,100
+web-server-02,10.0.1.11,Windows Server 2022,4,8192,100
+db-server-01,10.0.1.20,Ubuntu 22.04 LTS,8,32768,500
+app-server-01,10.0.1.30,Red Hat Enterprise Linux 8,4,16384,200
+app-server-02,10.0.1.31,Red Hat Enterprise Linux 8,4,16384,200
+sap-app-01,10.0.2.10,Windows Server 2019,8,32768,300
+sap-db-01,10.0.2.20,Windows Server 2019,16,65536,1000
+exchange-01,10.0.3.10,Windows Server 2019,8,32768,500
+sharepoint-01,10.0.3.20,Windows Server 2022,8,16384,300
+dc-01,10.0.0.10,Windows Server 2022,4,8192,100
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,45 @@
+{
+  "name": "@drmigrate/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@azure/arm-compute": "^21.0.0",
+    "@azure/arm-migrate": "^2.0.3",
+    "@azure/arm-network": "^33.0.0",
+    "@azure/arm-recoveryservices": "^6.0.0",
+    "@azure/arm-storage": "^18.0.0",
+    "@azure/identity": "^4.0.0",
+    "@drmigrate/shared-types": "workspace:*",
+    "@fastify/cors": "^9.0.0",
+    "@fastify/helmet": "^11.0.0",
+    "@fastify/multipart": "8",
+    "@fastify/sensible": "^5.0.0",
+    "@fastify/swagger": "^8.0.0",
+    "@fastify/swagger-ui": "^2.0.0",
+    "@prisma/client": "5.22.0",
+    "dotenv": "^16.3.0",
+    "fastify": "^4.25.0",
+    "nanoid": "^5.0.0",
+    "papaparse": "^5.5.3",
+    "pino-pretty": "^11.0.0",
+    "prisma": "5.22.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/papaparse": "^5.5.2",
+    "eslint": "^9.0.0",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.6.0",
+    "typescript": "^5.3.0"
+  }
+}
