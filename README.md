@@ -28,9 +28,12 @@ DrMigrate Azure Sync integrates with [Azure Migrate REST API](https://learn.micr
 
 | Document | Description |
 |----------|-------------|
+| [Developer Setup](docs/DEVELOPER_SETUP.md) | **Start here** - Developer environment setup |
 | [Architecture Plan](docs/ARCHITECTURE_PLAN.md) | Comprehensive system design |
+| [Architecture Current](docs/ARCHITECTURE_CURRENT.md) | Current implementation details |
 | [Decision Rationale](docs/DECISION_RATIONALE.md) | Why we chose each technology |
-| [Quick Start](docs/QUICK_START.md) | Step-by-step setup guide |
+| [Lift & Cleanse Design](docs/lift-and-cleanse-design.md) | Post-migration module design |
+| [Security Plan](docs/SECURITY_PLAN.md) | Security architecture |
 
 ## Project Phases
 
@@ -46,17 +49,97 @@ DrMigrate Azure Sync integrates with [Azure Migrate REST API](https://learn.micr
 
 ## Quick Start
 
+### Prerequisites
+
+- Node.js 20+ LTS
+- pnpm 8+ (`npm install -g pnpm`)
+
+### Setup (One Command)
+
 ```bash
-# Install dependencies
-pnpm install
-
-# Configure environment
-cp apps/web/.env.example apps/web/.env.local
-cp apps/api/.env.example apps/api/.env
-
-# Run development servers
-pnpm turbo dev
+# Clone and setup
+git clone <repository-url>
+cd drmigrate-azsync
+pnpm setup
 ```
+
+This automatically:
+- Installs all dependencies
+- Creates environment files from examples
+- Generates Prisma client
+- Creates the SQLite database
+
+### Run Development Servers
+
+```bash
+pnpm dev
+```
+
+Access the app at:
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:4000
+- **API Docs**: http://localhost:4000/docs
+
+> For detailed setup instructions, see [Developer Setup Guide](docs/DEVELOPER_SETUP.md)
+
+## Local Assets (Air-Gapped Support)
+
+This application is designed to work in **air-gapped environments** with zero external network requests. All assets are stored locally.
+
+### Asset Location
+
+All static assets are stored in `apps/web/public/assets/`:
+
+```
+apps/web/public/assets/
+├── fonts/          # Local font files (woff2)
+├── images/         # Logo, favicons, illustrations
+├── icons/          # Custom SVG icons
+└── README.md       # Detailed asset documentation
+```
+
+### Adding Fonts
+
+1. Download `.woff2` font files (best format for web)
+2. Place in `apps/web/public/assets/fonts/`
+3. Update `apps/web/src/app/layout.tsx`:
+
+```tsx
+import localFont from 'next/font/local';
+
+const myFont = localFont({
+  src: [
+    { path: '../../public/assets/fonts/MyFont-Regular.woff2', weight: '400' },
+    { path: '../../public/assets/fonts/MyFont-Bold.woff2', weight: '700' },
+  ],
+  variable: '--font-my-font',
+});
+```
+
+### Adding Images/Logos
+
+1. Place the image in `apps/web/public/assets/images/`
+2. Reference using the public path:
+
+```tsx
+import Image from 'next/image';
+
+<Image src="/assets/images/my-logo.svg" alt="Logo" width={130} height={32} />
+```
+
+### Icons
+
+**Primary:** Use [lucide-react](https://lucide.dev/) icons (bundled via npm, no external requests):
+
+```tsx
+import { Server, Database, Settings } from 'lucide-react';
+
+<Server className="h-5 w-5 text-primary" />
+```
+
+**Custom:** For icons not in lucide-react, add SVGs to `assets/icons/`
+
+> See `apps/web/public/assets/README.md` for complete asset documentation
 
 ## Azure Resources Required
 

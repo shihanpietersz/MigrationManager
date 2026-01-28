@@ -11,7 +11,24 @@ export interface AzureConfigInput {
   location?: string;
   vaultName?: string;
   vaultResourceGroup?: string;
+  setupCompletedAt?: Date;
 }
+
+export interface SetupStatus {
+  isConfigured: boolean;
+  missingFields: string[];
+  completedAt: string | null;
+}
+
+// Required fields for setup to be considered complete
+const REQUIRED_FIELDS = [
+  'tenantId',
+  'clientId', 
+  'clientSecret',
+  'subscriptionId',
+  'resourceGroup',
+  'migrateProjectName',
+] as const;
 
 export const azureConfigService = {
   /**
@@ -90,6 +107,48 @@ export const azureConfigService = {
     }
 
     return { success: true, message: 'Configuration is valid' };
+  },
+
+  /**
+   * Get setup status - used by the setup wizard to check if initial config is complete
+   */
+  async getSetupStatus(): Promise<SetupStatus> {
+    const config = await this.getConfig();
+    
+    if (!config) {
+      return {
+        isConfigured: false,
+        missingFields: [...REQUIRED_FIELDS],
+        completedAt: null,
+      };
+    }
+
+    // Check which required fields are missing
+    const missingFields: string[] = [];
+    for (const field of REQUIRED_FIELDS) {
+      if (!config[field]) {
+        missingFields.push(field);
+      }
+    }
+
+    return {
+      isConfigured: config.isConfigured && missingFields.length === 0,
+      missingFields,
+      completedAt: config.setupCompletedAt?.toISOString() ?? null,
+    };
+  },
+
+  /**
+   * Mark setup as complete
+   */
+  async completeSetup(): Promise<AzureConfig> {
+    return prisma.azureConfig.update({
+      where: { id: 'default' },
+      data: {
+        setupCompletedAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
   },
 };
 

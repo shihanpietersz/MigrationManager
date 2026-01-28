@@ -4,17 +4,27 @@
 
 @layer base {
   :root {
-    /* Dr Migrate Theme - Blue/Purple Gradient */
+    /* ===========================================
+       Migration Manager Theme - Clean & Modern
+       =========================================== */
+    
+    /* Background & Foreground */
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
+    
+    /* Cards */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
+    --card-border: 220 13% 91%;
+    
+    /* Popover */
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
     
     /* Primary - Blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-light: 217 91% 97%;
     
     /* Secondary */
     --secondary: 210 20% 96%;
@@ -24,54 +34,102 @@
     --muted: 210 20% 96%;
     --muted-foreground: 215 16% 47%;
     
-    /* Accent - Purple */
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent */
+    --accent: 210 20% 96%;
+    --accent-foreground: 222 47% 11%;
     
-    /* Destructive */
+    /* Success - Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 76% 96%;
+    
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 48 96% 95%;
+    
+    /* Danger/Destructive - Red */
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+    --danger-light: 0 86% 97%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
     /* Border & Input */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 217 91% 60%;
     --radius: 0.5rem;
     
-    /* Sidebar - White/Light */
+    /* Sidebar */
     --sidebar-bg: 0 0% 100%;
     --sidebar-foreground: 222 47% 11%;
-    --sidebar-muted: 210 20% 96%;
-    --sidebar-accent: 217 91% 60%;
-    --sidebar-section: 217 91% 60%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-muted: 215 16% 47%;
+    --sidebar-active: 217 91% 60%;
+    --sidebar-active-bg: 217 91% 97%;
   }
 
   .dark {
+    /* Background & Foreground */
     --background: 224 71% 4%;
     --foreground: 210 40% 98%;
+    
+    /* Cards */
     --card: 224 71% 8%;
     --card-foreground: 210 40% 98%;
+    --card-border: 217 33% 17%;
+    
+    /* Popover */
     --popover: 224 71% 8%;
     --popover-foreground: 210 40% 98%;
+    
+    /* Primary - Blue */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
+    --primary-light: 217 33% 17%;
+    
+    /* Secondary */
     --secondary: 217 33% 17%;
     --secondary-foreground: 210 40% 98%;
+    
+    /* Muted */
     --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 0 63% 31%;
+    
+    /* Accent */
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+    
+    /* Success - Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 40% 15%;
+    
+    /* Warning - Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 40% 15%;
+    
+    /* Danger/Destructive - Red */
+    --danger: 0 63% 50%;
+    --danger-foreground: 0 0% 100%;
+    --danger-light: 0 40% 15%;
+    --destructive: 0 63% 50%;
     --destructive-foreground: 210 40% 98%;
+    
+    /* Border & Input */
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 217 91% 60%;
     
+    /* Sidebar */
     --sidebar-bg: 224 71% 8%;
     --sidebar-foreground: 210 40% 98%;
-    --sidebar-muted: 217 33% 17%;
-    --sidebar-accent: 217 91% 60%;
-    --sidebar-section: 217 91% 60%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-muted: 215 20% 65%;
+    --sidebar-active: 217 91% 60%;
+    --sidebar-active-bg: 217 33% 17%;
   }
 }
 
@@ -84,81 +142,208 @@
   }
 }
 
-/* Dr Migrate Gradient Border - Blue to Purple */
-.drm-gradient-border {
-  border-bottom: 3px solid;
-  border-image-source: linear-gradient(
-    90deg,
-    #4F9CF9 0%,
-    #6B8DE3 25%,
-    #8B7BCF 50%,
-    #A66BBB 75%,
-    #8B5CF6 100%
-  );
-  border-image-slice: 1;
+/* ===========================================
+   Component Styles - Solid Colors (No Gradients)
+   =========================================== */
+
+/* Header Border */
+.mm-header-border {
+  @apply border-b-2 border-primary;
 }
 
-/* Dr Migrate Button Styles - Blue/Purple Gradient */
-.drm-btn-primary {
-  @apply text-white font-medium px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98];
-  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+/* Button Styles - Solid Colors */
+.mm-btn-primary {
+  @apply bg-primary text-primary-foreground font-medium px-6 py-2.5 rounded-lg 
+         shadow-sm hover:bg-primary/90 transition-all duration-200 
+         hover:shadow-md active:scale-[0.98];
 }
 
-.drm-btn-primary:hover {
-  background: linear-gradient(90deg, #3B8AE8 0%, #7C4DE5 100%);
+.mm-btn-secondary {
+  @apply bg-secondary text-secondary-foreground font-medium px-6 py-2.5 rounded-lg 
+         border border-border hover:bg-secondary/80 transition-all duration-200;
 }
 
-.drm-btn-secondary {
-  @apply text-white font-medium px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98];
-  background: linear-gradient(90deg, #6B8DE3 0%, #A66BBB 100%);
+.mm-btn-success {
+  @apply bg-success text-success-foreground font-medium px-6 py-2.5 rounded-lg 
+         shadow-sm hover:bg-success/90 transition-all duration-200 
+         hover:shadow-md active:scale-[0.98];
 }
 
-.drm-btn-secondary:hover {
-  background: linear-gradient(90deg, #5A7CD2 0%, #9558AA 100%);
+.mm-btn-danger {
+  @apply bg-danger text-danger-foreground font-medium px-6 py-2.5 rounded-lg 
+         shadow-sm hover:bg-danger/90 transition-all duration-200 
+         hover:shadow-md active:scale-[0.98];
 }
 
-.drm-btn-tertiary {
-  @apply text-white font-medium px-6 py-2.5 rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98];
-  background: linear-gradient(90deg, #8B7BCF 0%, #8B5CF6 100%);
+.mm-btn-outline {
+  @apply bg-transparent text-primary font-medium px-6 py-2.5 rounded-lg 
+         border border-primary hover:bg-primary hover:text-primary-foreground 
+         transition-all duration-200;
 }
 
-.drm-btn-tertiary:hover {
-  background: linear-gradient(90deg, #7A6ABE 0%, #7A4BE5 100%);
+.mm-btn-ghost {
+  @apply bg-transparent text-foreground font-medium px-6 py-2.5 rounded-lg 
+         hover:bg-muted transition-all duration-200;
 }
 
-/* Progress bar gradient - Blue to Purple */
-.drm-progress-gradient {
-  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+/* Card Styles */
+.mm-card {
+  @apply bg-card rounded-xl border border-card-border shadow-sm 
+         transition-all duration-200 hover:shadow-md;
 }
 
-/* Card hover effects */
-.drm-card {
-  @apply bg-white rounded-xl border border-gray-100 shadow-sm transition-all duration-200 hover:shadow-md hover:border-gray-200;
+.mm-card-interactive {
+  @apply bg-card rounded-xl border border-card-border shadow-sm 
+         transition-all duration-200 hover:shadow-md hover:border-primary/30 cursor-pointer;
 }
 
-.drm-card-metric {
-  @apply bg-white rounded-xl border border-gray-100 p-6 transition-all duration-200 hover:shadow-lg hover:border-blue-200;
+/* Stat Card - for metrics display */
+.mm-stat-card {
+  @apply bg-card rounded-xl border border-card-border p-6 
+         transition-all duration-200 hover:shadow-lg hover:border-primary/30;
 }
 
-/* Stepper styles */
-.drm-step-completed {
-  @apply text-blue-500;
+/* Progress Bars - Solid Colors */
+.mm-progress {
+  @apply h-2 bg-muted rounded-full overflow-hidden;
 }
 
-.drm-step-active {
-  @apply text-primary;
+.mm-progress-bar {
+  @apply h-full rounded-full transition-all duration-300;
 }
 
-.drm-step-upcoming {
-  @apply text-gray-400;
+.mm-progress-primary {
+  @apply bg-primary;
 }
 
-.drm-stepper-line {
-  @apply w-12 h-0.5 bg-gray-200 mx-2;
+.mm-progress-success {
+  @apply bg-success;
 }
 
-.drm-stepper-line-active {
-  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+.mm-progress-danger {
+  @apply bg-danger;
+}
+
+.mm-progress-warning {
+  @apply bg-warning;
+}
+
+/* Tab Styles - Pill Style */
+.mm-tabs {
+  @apply inline-flex bg-muted p-1 rounded-lg;
+}
+
+.mm-tab {
+  @apply px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 
+         text-muted-foreground hover:text-foreground;
+}
+
+.mm-tab-active {
+  @apply bg-primary text-primary-foreground shadow-sm;
+}
+
+/* Sidebar Navigation */
+.mm-sidebar-item {
+  @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm 
+         transition-colors duration-200 text-sidebar-muted 
+         hover:bg-muted hover:text-foreground;
+}
+
+.mm-sidebar-item-active {
+  @apply bg-primary-light text-primary font-medium;
+}
+
+/* Section Cards */
+.mm-section-card {
+  @apply bg-card rounded-xl border border-card-border overflow-hidden;
+}
+
+.mm-section-header {
+  @apply text-lg font-semibold text-foreground px-6 py-4 border-b border-card-border;
+}
+
+/* Status Badges */
+.mm-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.mm-badge-primary {
+  @apply bg-primary-light text-primary;
+}
+
+.mm-badge-success {
+  @apply bg-success-light text-success;
+}
+
+.mm-badge-danger {
+  @apply bg-danger-light text-danger;
+}
+
+.mm-badge-warning {
+  @apply bg-warning-light text-warning;
+}
+
+.mm-badge-neutral {
+  @apply bg-muted text-muted-foreground;
+}
+
+/* Icon Containers - for stat cards */
+.mm-icon-container {
+  @apply p-2.5 rounded-full;
+}
+
+.mm-icon-primary {
+  @apply bg-primary-light text-primary;
+}
+
+.mm-icon-success {
+  @apply bg-success-light text-success;
+}
+
+.mm-icon-danger {
+  @apply bg-danger-light text-danger;
+}
+
+.mm-icon-warning {
+  @apply bg-warning-light text-warning;
+}
+
+.mm-icon-neutral {
+  @apply bg-muted text-muted-foreground;
+}
+
+/* Workflow/Stepper Cards */
+.mm-workflow-card {
+  @apply bg-card rounded-xl border-2 p-5 transition-all duration-200;
+}
+
+.mm-workflow-card-completed {
+  @apply border-success/30 bg-success-light;
+}
+
+.mm-workflow-card-active {
+  @apply border-primary shadow-lg;
+}
+
+.mm-workflow-card-pending {
+  @apply border-card-border;
+}
+
+/* Info Card - for status messages */
+.mm-info-card {
+  @apply rounded-xl border p-6 bg-primary-light border-primary/30;
+}
+
+.mm-info-card-success {
+  @apply bg-success-light border-success/30;
+}
+
+.mm-info-card-warning {
+  @apply bg-warning-light border-warning/30;
+}
+
+.mm-info-card-danger {
+  @apply bg-danger-light border-danger/30;
 }
 
 /* Custom scrollbar */
@@ -181,61 +366,98 @@
 
 /* Sidebar Scrollbar */
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  @apply bg-border rounded-full;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+  @apply bg-muted-foreground/40;
 }
 
-/* Insights Button - Gradient */
+/* ===========================================
+   Legacy Class Mappings (for backwards compatibility)
+   Remove these as components are updated
+   =========================================== */
+
+.drm-gradient-border {
+  @apply border-b-2 border-primary;
+}
+
+.drm-btn-primary {
+  @apply mm-btn-primary;
+}
+
+.drm-btn-secondary {
+  @apply mm-btn-secondary;
+}
+
+.drm-btn-tertiary {
+  @apply mm-btn-primary;
+}
+
+.drm-card {
+  @apply mm-card;
+}
+
+.drm-card-metric {
+  @apply mm-stat-card;
+}
+
+.drm-progress-gradient {
+  @apply mm-progress-primary;
+}
+
 .drm-insights-btn {
-  @apply text-white font-medium px-5 py-2.5 rounded-lg shadow-lg hover:shadow-xl transition-all;
-  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+  @apply mm-btn-primary;
 }
 
-.drm-insights-btn:hover {
-  background: linear-gradient(90deg, #3B8AE8 0%, #7C4DE5 100%);
-}
-
-/* Section Cards */
 .drm-section-card {
-  @apply bg-white rounded-xl border border-gray-100 overflow-hidden;
+  @apply mm-section-card;
 }
 
 .drm-section-header {
-  @apply text-lg font-semibold text-gray-900 px-6 py-4 border-b border-gray-100;
+  @apply mm-section-header;
 }
 
-/* License Card - Blue/Purple theme */
 .drm-license-card {
-  @apply rounded-xl border p-6;
-  background: linear-gradient(135deg, rgba(79, 156, 249, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
-  border-color: rgba(79, 156, 249, 0.3);
+  @apply mm-info-card;
 }
 
-/* Workflow Cards */
 .drm-workflow-card {
-  @apply bg-white rounded-xl border-2 p-5 transition-all duration-200;
+  @apply mm-workflow-card;
 }
 
 .drm-workflow-card-completed {
-  @apply border-blue-300 bg-blue-50/30;
+  @apply mm-workflow-card-completed;
 }
 
 .drm-workflow-card-active {
-  @apply border-purple-400 shadow-lg;
-  border-image-source: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
+  @apply mm-workflow-card-active;
 }
 
 .drm-workflow-card-pending {
-  @apply border-gray-200;
+  @apply mm-workflow-card-pending;
 }
 
-/* Gradient text */
 .drm-gradient-text {
-  background: linear-gradient(90deg, #4F9CF9 0%, #8B5CF6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  @apply text-primary font-semibold;
+}
+
+.drm-step-completed {
+  @apply text-success;
+}
+
+.drm-step-active {
+  @apply text-primary;
+}
+
+.drm-step-upcoming {
+  @apply text-muted-foreground;
+}
+
+.drm-stepper-line {
+  @apply w-12 h-0.5 bg-border mx-2;
+}
+
+.drm-stepper-line-active {
+  @apply bg-primary;
 }

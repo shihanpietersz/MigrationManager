@@ -4,6 +4,12 @@
   "private": true,
   "packageManager": "pnpm@9.14.2",
   "scripts": {
+    "setup": "pnpm install && pnpm setup:env && pnpm db:generate && pnpm db:push",
+    "setup:env": "node scripts/setup-env.js",
+    "db:generate": "cd apps/api && npx prisma generate",
+    "db:push": "cd apps/api && npx prisma db push",
+    "db:studio": "cd apps/api && npx prisma studio",
+    "db:reset": "cd apps/api && npx prisma db push --force-reset",
     "dev": "turbo run dev",
     "build": "turbo run build",
     "start": "turbo run start",

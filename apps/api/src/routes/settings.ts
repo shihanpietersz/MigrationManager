@@ -6,6 +6,82 @@ import { groupService } from '../services/group.service.js';
 import type { ApiResponse } from '@drmigrate/shared-types';
 
 export const settingsRoutes: FastifyPluginAsync = async (fastify) => {
+  // Get setup status - lightweight endpoint for checking if initial setup is complete
+  fastify.get(
+    '/setup-status',
+    {
+      schema: {
+        tags: ['Settings'],
+        summary: 'Check if initial setup is complete',
+        description: 'Returns configuration status and missing fields for the setup wizard',
+      },
+    },
+    async (): Promise<ApiResponse<{ isConfigured: boolean; missingFields: string[]; completedAt: string | null }>> => {
+      const status = await azureConfigService.getSetupStatus();
+      return {
+        success: true,
+        data: status,
+      };
+    }
+  );
+
+  // Complete setup - marks setup as done
+  fastify.post(
+    '/setup-complete',
+    {
+      schema: {
+        tags: ['Settings'],
+        summary: 'Mark initial setup as complete',
+        description: 'Called when user finishes the setup wizard',
+      },
+    },
+    async (_, reply): Promise<ApiResponse<{ completedAt: string }>> => {
+      try {
+        // First verify configuration is valid
+        const status = await azureConfigService.getSetupStatus();
+        if (status.missingFields.length > 0) {
+          reply.code(400);
+          return {
+            success: false,
+            error: {
+              code: 'INCOMPLETE_SETUP',
+              message: `Missing required fields: ${status.missingFields.join(', ')}`,
+            },
+          };
+        }
+
+        const config = await azureConfigService.completeSetup();
+        
+        // Log activity
+        await activityService.log({
+          type: 'system',
+          action: 'completed',
+          title: 'Initial setup completed',
+          description: 'Azure configuration has been set up successfully',
+          status: 'success',
+          entityType: 'config',
+          entityId: 'default',
+        });
+
+        return {
+          success: true,
+          data: {
+            completedAt: config.setupCompletedAt?.toISOString() ?? new Date().toISOString(),
+          },
+        };
+      } catch (error) {
+        reply.code(400);
+        return {
+          success: false,
+          error: {
+            code: 'SETUP_ERROR',
+            message: error instanceof Error ? error.message : 'Failed to complete setup',
+          },
+        };
+      }
+    }
+  );
+
   // Get Azure configuration
   fastify.get(
     '/azure',

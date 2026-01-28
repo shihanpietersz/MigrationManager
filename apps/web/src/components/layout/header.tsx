@@ -14,7 +14,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import DrMigrateLogo from '@/components/images/logo-dark.svg';
+
+// Logo is stored locally in public/assets/images/
+// No external network requests for assets
 
 const workflowSteps = [
   { name: 'Setup', paths: ['/settings'], href: '/settings' },
@@ -41,13 +43,13 @@ export function Header() {
   const currentStepIndex = getCurrentStepIndex();
 
   return (
-    <header className="drm-gradient-border bg-white">
+    <header className="mm-header-border bg-card">
       <nav className="flex h-12 items-center justify-between px-4">
         <div className="flex items-center gap-4">
-          {/* Logo */}
+          {/* Logo - local asset, no external requests */}
           <Link href="/" className="flex items-center">
             <Image
-              src={DrMigrateLogo}
+              src="/assets/images/logo-dark.svg"
               alt="Dr Migrate"
               width={130}
               height={32}
@@ -55,7 +57,7 @@ export function Header() {
               priority
             />
           </Link>
-          <div className="h-6 w-px bg-gray-200" />
+          <div className="h-6 w-px bg-border" />
         </div>
 
         {/* Workflow Progress Steps - Centered */}
@@ -74,28 +76,28 @@ export function Header() {
                     className={cn(
                       'flex items-center gap-2 rounded-full border px-4 py-1.5 transition-all',
                       isCompleted
-                        ? 'border-blue-200 bg-blue-50 hover:bg-blue-100'
+                        ? 'border-success/30 bg-success-light hover:bg-success-light/80'
                         : isCurrent
-                        ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
+                        ? 'border-primary/30 bg-primary-light hover:bg-primary-light/80'
                         : step.isMigrate
-                        ? 'border-purple-200 bg-purple-50 hover:bg-purple-100'
+                        ? 'border-primary/30 bg-primary-light hover:bg-primary-light/80'
                         : step.isCleanse
-                        ? 'border-emerald-200 bg-emerald-50 hover:bg-emerald-100'
-                        : 'border-gray-200 bg-white hover:bg-gray-50'
+                        ? 'border-success/30 bg-success-light hover:bg-success-light/80'
+                        : 'border-border bg-card hover:bg-muted'
                     )}
                   >
                     <div
                       className={cn(
                         'flex h-5 w-5 items-center justify-center rounded-full text-xs transition-all',
                         isCompleted
-                          ? 'bg-blue-500 text-white'
+                          ? 'bg-success text-success-foreground'
                           : isCurrent
-                          ? 'bg-purple-500 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : step.isMigrate
-                          ? 'bg-purple-500 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : step.isCleanse
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-gray-100 text-gray-400'
+                          ? 'bg-success text-success-foreground'
+                          : 'bg-muted text-muted-foreground'
                       )}
                     >
                       {isCompleted ? (
@@ -112,14 +114,14 @@ export function Header() {
                       className={cn(
                         'text-sm font-medium transition-colors',
                         isCompleted 
-                          ? 'text-blue-700' 
+                          ? 'text-success' 
                           : isCurrent 
-                          ? 'text-purple-700'
+                          ? 'text-primary'
                           : step.isMigrate
-                          ? 'text-purple-700'
+                          ? 'text-primary'
                           : step.isCleanse
-                          ? 'text-emerald-700'
-                          : 'text-gray-600'
+                          ? 'text-success'
+                          : 'text-muted-foreground'
                       )}
                     >
                       {step.name}
@@ -130,7 +132,7 @@ export function Header() {
                   <div
                     className={cn(
                       'mx-1 h-px w-4',
-                      index < currentStepIndex ? 'bg-blue-400' : 'bg-gray-200'
+                      index < currentStepIndex ? 'bg-success' : 'bg-border'
                     )}
                   />
                 )}
@@ -141,18 +143,18 @@ export function Header() {
 
         {/* User Menu */}
         <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-gray-700">Azure-Tenant-001</span>
+          <span className="text-sm font-medium text-foreground">Azure-Tenant-001</span>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="flex items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 hover:bg-gray-50"
+                className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5 hover:bg-muted"
               >
-                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-gray-300 bg-gray-50">
-                  <User className="h-3.5 w-3.5 text-gray-500" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted">
+                  <User className="h-3.5 w-3.5 text-muted-foreground" />
                 </div>
-                <span className="text-sm text-gray-700">Admin</span>
+                <span className="text-sm text-foreground">Admin</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

@@ -383,8 +383,23 @@ export interface ActivityLogEntry {
   createdAt: string;
 }
 
+// Setup status type
+export interface SetupStatus {
+  isConfigured: boolean;
+  missingFields: string[];
+  completedAt: string | null;
+}
+
 // Settings API
 export const settingsApi = {
+  // Setup wizard endpoints
+  getSetupStatus: () => fetchApi<SetupStatus>('/settings/setup-status'),
+  
+  completeSetup: () => 
+    fetchApi<{ completedAt: string }>('/settings/setup-complete', {
+      method: 'POST',
+    }),
+
   getAzureConfig: () => fetchApi<AzureConfig>('/settings/azure'),
 
   saveAzureConfig: (config: {
