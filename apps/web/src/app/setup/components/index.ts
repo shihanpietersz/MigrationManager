@@ -8,5 +8,4 @@ export {
   SETUP_STEPS,
   inputClassName,
   inputErrorClassName,
-  selectClassName,
 } from './WizardLayout';

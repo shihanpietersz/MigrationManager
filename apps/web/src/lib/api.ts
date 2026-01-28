@@ -365,11 +365,11 @@ export interface AzureConfig {
   subscriptionId: string | null;
   subscriptionName: string | null;
   resourceGroup: string | null;
-  migrateProject: string | null;
-  location: string;
+  migrateProjectName: string | null;
+  location: string | null;
   vaultName: string | null;
   vaultResourceGroup: string | null;
-  isActive: boolean;
+  isConfigured: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -409,7 +409,7 @@ export const settingsApi = {
     subscriptionId?: string;
     subscriptionName?: string;
     resourceGroup?: string;
-    migrateProject?: string;
+    migrateProjectName?: string;
     location?: string;
     vaultName?: string;
     vaultResourceGroup?: string;
@@ -426,7 +426,7 @@ export const settingsApi = {
     subscriptionId?: string;
     subscriptionName?: string;
     resourceGroup?: string;
-    migrateProject?: string;
+    migrateProjectName?: string;
     location?: string;
     vaultName?: string;
     vaultResourceGroup?: string;
@@ -437,7 +437,7 @@ export const settingsApi = {
     }),
 
   testAzureConnection: () =>
-    fetchApi<{ connected: boolean; message: string; details?: Record<string, unknown> }>(
+    fetchApi<{ success: boolean; message: string; details?: Record<string, unknown> }>(
       '/settings/azure/test',
       { method: 'POST' }
     ),

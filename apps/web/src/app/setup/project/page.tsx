@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { HelpCircle, ChevronDown } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { 
   WizardLayout, 
   FormField, 
@@ -10,7 +10,6 @@ import {
   WizardNav,
   inputClassName,
   inputErrorClassName,
-  selectClassName,
 } from '../components';
 import { cn } from '@/lib/utils';
 
@@ -21,26 +20,10 @@ interface ProjectData {
   subscriptionId: string;
   resourceGroup: string;
   migrateProjectName: string;
-  location: string;
 }
 
 // GUID validation regex
 const GUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-// Azure regions
-const AZURE_LOCATIONS = [
-  { value: 'eastus', label: 'East US' },
-  { value: 'eastus2', label: 'East US 2' },
-  { value: 'westus', label: 'West US' },
-  { value: 'westus2', label: 'West US 2' },
-  { value: 'centralus', label: 'Central US' },
-  { value: 'northeurope', label: 'North Europe' },
-  { value: 'westeurope', label: 'West Europe' },
-  { value: 'uksouth', label: 'UK South' },
-  { value: 'ukwest', label: 'UK West' },
-  { value: 'australiaeast', label: 'Australia East' },
-  { value: 'southeastasia', label: 'Southeast Asia' },
-];
 
 /**
  * Step 3: Azure Migrate Project Page
@@ -52,7 +35,6 @@ export default function SetupProjectPage() {
     subscriptionId: '',
     resourceGroup: '',
     migrateProjectName: '',
-    location: 'eastus',
   });
   const [errors, setErrors] = useState<Partial<ProjectData>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -67,7 +49,6 @@ export default function SetupProjectPage() {
           subscriptionId: data.subscriptionId || '',
           resourceGroup: data.resourceGroup || '',
           migrateProjectName: data.migrateProjectName || '',
-          location: data.location || 'eastus',
         });
       }
     } catch {
@@ -98,12 +79,10 @@ export default function SetupProjectPage() {
     let isValid = true;
 
     (Object.keys(formData) as Array<keyof ProjectData>).forEach((key) => {
-      if (key !== 'location') { // Location always has a default
-        const error = validateField(key, formData[key]);
-        if (error) {
-          newErrors[key] = error;
-          isValid = false;
-        }
+      const error = validateField(key, formData[key]);
+      if (error) {
+        newErrors[key] = error;
+        isValid = false;
       }
     });
 
@@ -113,7 +92,7 @@ export default function SetupProjectPage() {
   };
 
   // Handle input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     
@@ -242,7 +221,7 @@ export default function SetupProjectPage() {
             htmlFor="migrateProjectName"
             required
             error={touched.migrateProjectName ? errors.migrateProjectName : undefined}
-            hint="The name of your Azure Migrate project"
+            hint="The name of your Azure Migrate project (region is determined by the project)"
           >
             <input
               type="text"
@@ -257,30 +236,6 @@ export default function SetupProjectPage() {
                 touched.migrateProjectName && errors.migrateProjectName && inputErrorClassName
               )}
             />
-          </FormField>
-
-          {/* Location */}
-          <FormField
-            label="Location"
-            htmlFor="location"
-            hint="The Azure region where your project is located"
-          >
-            <div className="relative">
-              <select
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className={selectClassName}
-              >
-                {AZURE_LOCATIONS.map((loc) => (
-                  <option key={loc.value} value={loc.value}>
-                    {loc.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-            </div>
           </FormField>
         </FormSection>
 

@@ -7,10 +7,10 @@ import {
   CheckCircle,
   XCircle,
   Loader2,
-  AlertCircle,
   Shield,
   Cloud,
   RefreshCw,
+  Server,
 } from 'lucide-react';
 import { WizardLayout, WizardNav, WizardAction } from '../components';
 import { settingsApi } from '@/lib/api';
@@ -27,10 +27,10 @@ interface WizardData {
   subscriptionId: string;
   resourceGroup: string;
   migrateProjectName: string;
-  location: string;
 }
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
+type SetupPhase = 'verify' | 'syncing' | 'complete';
 
 /**
  * Step 4: Verify & Complete Page
@@ -41,7 +41,8 @@ export default function SetupVerifyPage() {
   const [wizardData, setWizardData] = useState<WizardData | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('idle');
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [setupPhase, setSetupPhase] = useState<SetupPhase>('verify');
+  const [syncResult, setSyncResult] = useState<{ count: number; sites: string[] } | null>(null);
   
   const completeSetupMutation = useCompleteSetup();
 
@@ -69,8 +70,7 @@ export default function SetupVerifyPage() {
         clientSecret: data.clientSecret,
         subscriptionId: data.subscriptionId,
         resourceGroup: data.resourceGroup,
-        migrateProject: data.migrateProjectName,
-        location: data.location,
+        migrateProjectName: data.migrateProjectName,
       });
     },
   });
@@ -94,7 +94,7 @@ export default function SetupVerifyPage() {
       // Then test the connection
       const result = await testConnectionMutation.mutateAsync();
       
-      if (result.data?.connected) {
+      if (result.data?.success) {
         setConnectionStatus('success');
       } else {
         setConnectionStatus('error');
@@ -110,7 +110,7 @@ export default function SetupVerifyPage() {
   const handleCompleteSetup = async () => {
     if (!wizardData) return;
     
-    setIsSaving(true);
+    setSetupPhase('syncing');
     
     try {
       // Save config if not already saved
@@ -121,14 +121,30 @@ export default function SetupVerifyPage() {
       // Mark setup as complete
       await completeSetupMutation.mutateAsync();
       
+      // Sync machines from Azure Migrate
+      try {
+        const syncResponse = await settingsApi.syncAzureMachines();
+        if (syncResponse.data) {
+          setSyncResult(syncResponse.data);
+        }
+      } catch (syncError) {
+        // Don't fail setup if sync fails - user can sync later
+        console.warn('Failed to sync machines:', syncError);
+      }
+      
       // Clear wizard data
       sessionStorage.removeItem(STORAGE_KEY);
       
-      // Redirect to dashboard
-      router.push('/');
+      // Show completion state
+      setSetupPhase('complete');
+      
+      // Redirect to machines page after a short delay
+      setTimeout(() => {
+        router.push('/machines');
+      }, 2000);
     } catch (error) {
       setConnectionError(error instanceof Error ? error.message : 'Failed to complete setup');
-      setIsSaving(false);
+      setSetupPhase('verify');
     }
   };
 
@@ -141,6 +157,60 @@ export default function SetupVerifyPage() {
       <WizardLayout currentStep={3} title="Loading..." description="Loading your configuration...">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </WizardLayout>
+    );
+  }
+
+  // Show syncing/complete state
+  if (setupPhase === 'syncing' || setupPhase === 'complete') {
+    return (
+      <WizardLayout
+        currentStep={3}
+        title={setupPhase === 'syncing' ? 'Completing Setup...' : 'Setup Complete!'}
+        description={setupPhase === 'syncing' 
+          ? 'Syncing machines from Azure Migrate...' 
+          : 'Your Azure configuration is ready.'}
+      >
+        <div className="space-y-6">
+          {setupPhase === 'syncing' && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+              <p className="text-lg font-medium text-foreground">Syncing machines from Azure Migrate...</p>
+              <p className="text-sm text-muted-foreground mt-2">This may take a moment</p>
+            </div>
+          )}
+
+          {setupPhase === 'complete' && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="mm-icon-container mm-icon-success p-4 mb-4">
+                <CheckCircle className="h-12 w-12" />
+              </div>
+              <p className="text-xl font-semibold text-foreground mb-2">Setup Complete!</p>
+              
+              {syncResult && syncResult.count > 0 ? (
+                <div className="text-center">
+                  <p className="text-muted-foreground">
+                    Successfully synced <span className="font-semibold text-success">{syncResult.count}</span> machines
+                    {syncResult.sites.length > 0 && (
+                      <> from {syncResult.sites.length} site{syncResult.sites.length > 1 ? 's' : ''}</>
+                    )}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Redirecting to machines page...</p>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <p className="text-muted-foreground">
+                    Configuration saved successfully.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No machines found to sync. You can import machines manually or refresh later.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-2">Redirecting to machines page...</p>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </WizardLayout>
     );
@@ -180,7 +250,6 @@ export default function SetupVerifyPage() {
               <SummaryRow label="Subscription ID" value={maskGuid(wizardData.subscriptionId)} />
               <SummaryRow label="Resource Group" value={wizardData.resourceGroup} />
               <SummaryRow label="Project Name" value={wizardData.migrateProjectName} />
-              <SummaryRow label="Location" value={wizardData.location} />
             </div>
           </div>
         </div>
@@ -224,7 +293,7 @@ export default function SetupVerifyPage() {
                   <div>
                     <p className="font-medium text-success">Connection successful!</p>
                     <p className="text-sm text-muted-foreground">
-                      Your Azure configuration is valid. You can now complete the setup.
+                      Your Azure configuration is valid. Click below to complete setup and sync machines.
                     </p>
                   </div>
                 </>
@@ -259,9 +328,8 @@ export default function SetupVerifyPage() {
           <div className="pt-4">
             <WizardAction
               onClick={handleCompleteSetup}
-              label="Complete Setup"
-              icon={<CheckCircle className="h-4 w-4" />}
-              isLoading={isSaving}
+              label="Complete Setup & Sync Machines"
+              icon={<Server className="h-4 w-4" />}
               variant="success"
             />
           </div>
@@ -276,7 +344,6 @@ export default function SetupVerifyPage() {
             <button
               type="button"
               onClick={handleCompleteSetup}
-              disabled={isSaving}
               className="text-sm text-primary hover:underline"
             >
               Save configuration and complete setup without testing
