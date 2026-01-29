@@ -16,6 +16,9 @@ import { targetRoutes } from './routes/targets.js';
 import { settingsRoutes } from './routes/settings.js';
 import { activityRoutes } from './routes/activity.js';
 import { liftCleanseRoutes } from './routes/lift-cleanse.js';
+import { syncRoutes } from './routes/sync.js';
+import { statsRoutes } from './routes/stats.js';
+import { syncSchedulerService } from './services/sync-scheduler.service.js';
 
 // Load environment variables
 dotenv.config();
@@ -68,6 +71,8 @@ async function buildServer() {
       ],
       tags: [
         { name: 'Health', description: 'Health check endpoints' },
+        { name: 'Sync', description: 'Data source synchronization scheduling' },
+        { name: 'Statistics', description: 'Aggregate statistics and metrics' },
         { name: 'Machines', description: 'Machine inventory management' },
         { name: 'Data Sources', description: 'External data source management' },
         { name: 'Groups', description: 'Assessment group management' },
@@ -91,6 +96,8 @@ async function buildServer() {
 
   // Register routes
   await server.register(healthRoutes, { prefix: '/api/v1' });
+  await server.register(syncRoutes, { prefix: '/api/v1/sync' });
+  await server.register(statsRoutes, { prefix: '/api/v1/stats' });
   await server.register(machineRoutes, { prefix: '/api/v1/machines' });
   await server.register(dataSourceRoutes, { prefix: '/api/v1/data-sources' });
   await server.register(groupRoutes, { prefix: '/api/v1/groups' });
@@ -111,12 +118,18 @@ async function start() {
     const host = process.env.HOST || '0.0.0.0';
 
     await app.listen({ port, host });
+    
+    // Initialize sync schedules after server starts
+    await syncSchedulerService.initializeSchedules();
+    
     console.log(`
-🚀 DrMigrate Azure Sync API is running! [v15 - Lift & Cleanse module]
+🚀 DrMigrate Azure Sync API is running! [v16 - Machine Matching & Sync]
    
    API:          http://localhost:${port}
    Docs:         http://localhost:${port}/docs
    Health:       http://localhost:${port}/api/v1/health
+   Sync:         http://localhost:${port}/api/v1/sync
+   Stats:        http://localhost:${port}/api/v1/stats
    Lift&Cleanse: http://localhost:${port}/api/v1/lift-cleanse
     `);
   } catch (err) {

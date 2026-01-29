@@ -32,6 +32,110 @@ model AzureConfig {
 }
 
 // ============================================
+// CONNECTION HEALTH & SYNC
+// ============================================
+
+// Track connection health status for data sources
+model ConnectionHealth {
+  id              String    @id @default(cuid())
+  sourceType      String    @unique  // 'azure-migrate' | 'drmigrate'
+  status          String    @default("unknown")  // 'connected' | 'warning' | 'error' | 'unknown'
+  lastCheckAt     DateTime?
+  lastSuccessAt   DateTime?
+  lastErrorAt     DateTime?
+  lastErrorMsg    String?
+  machineCount    Int       @default(0)  // Cached count for quick display
+  responseTimeMs  Int?      // Last response time in milliseconds
+  checkCount      Int       @default(0)  // Total checks performed
+  failCount       Int       @default(0)  // Total failures
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// Auto-sync scheduling configuration
+model SyncSchedule {
+  id              String    @id @default(cuid())
+  sourceType      String    @unique  // 'azure-migrate' | 'drmigrate'
+  enabled         Boolean   @default(false)
+  intervalMinutes Int       @default(60)  // 15, 30, 60, 360, 1440
+  lastSyncAt      DateTime?
+  nextSyncAt      DateTime?
+  lastSyncStatus  String?   // 'success' | 'failed' | 'running'
+  lastSyncError   String?
+  lastSyncCount   Int?      // Machines synced in last run
+  lastSyncDuration Int?     // Duration in milliseconds
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ============================================
+// MACHINE MATCHING
+// ============================================
+
+// Cached servers imported from DrMigrate SQL database
+model DrMigrateServer {
+  id                  String    @id @default(cuid())
+  externalId          String    @unique  // ID from DrMigrate DB
+  serverName          String
+  ipAddresses         String?   // JSON array
+  operatingSystem     String?
+  
+  // Assessment context from DrMigrate
+  wave                String?
+  waveId              String?
+  syncGroup           String?
+  syncGroupId         String?
+  environment         String?
+  applicationOwner    String?
+  businessCriticality String?
+  migrationStatus     String?
+  
+  // Raw data for reference
+  rawData             String?   // Full JSON from DrMigrate
+  
+  importedAt          DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@index([serverName])
+  @@index([wave])
+}
+
+// Links Azure Migrate machines with DrMigrate assessment data
+model MachineMapping {
+  id                    String   @id @default(cuid())
+  
+  // Azure Migrate side (required for replication)
+  azureMigrateId        String   @unique  // ARM resource ID
+  azureDisplayName      String
+  azureHostname         String?
+  
+  // DrMigrate side (provides context)
+  drMigrateServerId     String?  // Server ID from DrMigrate
+  drMigrateServerName   String?
+  
+  // Matching metadata
+  matchType             String   @default("unmatched")  // 'auto' | 'manual' | 'unmatched'
+  matchConfidence       Float?   // 0-1 for auto matches
+  matchedAt             DateTime?
+  matchedBy             String?  // 'system' or user identifier
+  
+  // Combined/enriched data from DrMigrate
+  wave                  String?
+  syncGroup             String?
+  environment           String?
+  applicationOwner      String?
+  businessCriticality   String?
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  @@index([matchType])
+  @@index([drMigrateServerId])
+}
+
+// ============================================
 // DATA SOURCES
 // ============================================
 

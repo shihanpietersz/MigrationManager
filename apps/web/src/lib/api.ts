@@ -358,6 +358,178 @@ export const activityApi = {
     }>>(`/activity?limit=${limit}`),
 };
 
+// ============================================
+// CONNECTION HEALTH API
+// ============================================
+
+export type HealthStatus = 'connected' | 'warning' | 'error' | 'unknown';
+export type SourceType = 'azure-migrate' | 'drmigrate';
+
+export interface ConnectionHealthSummary {
+  sourceType: SourceType;
+  status: HealthStatus;
+  lastCheckAt: string | null;
+  lastSuccessAt: string | null;
+  lastErrorMsg: string | null;
+  machineCount: number;
+  responseTimeMs: number | null;
+  checkCount: number;
+  failCount: number;
+  uptime: number;
+}
+
+export interface HealthCheckResult {
+  sourceType: SourceType;
+  status: HealthStatus;
+  lastCheckAt: string;
+  machineCount: number;
+  responseTimeMs: number;
+  error?: string;
+}
+
+export const healthApi = {
+  // Get all connection health statuses
+  getAllHealth: () =>
+    fetchApi<Record<SourceType, ConnectionHealthSummary>>('/health/connections'),
+
+  // Get health for a specific source
+  getHealth: (sourceType: SourceType) =>
+    fetchApi<ConnectionHealthSummary>(`/health/connections/${sourceType}`),
+
+  // Trigger health check for a specific source
+  checkHealth: (sourceType: SourceType) =>
+    fetchApi<HealthCheckResult>(`/health/check/${sourceType}`, {
+      method: 'POST',
+    }),
+
+  // Trigger health check for all sources
+  checkAllHealth: () =>
+    fetchApi<HealthCheckResult[]>('/health/check-all', {
+      method: 'POST',
+    }),
+};
+
+// ============================================
+// SYNC SCHEDULE API
+// ============================================
+
+export type SyncStatus = 'success' | 'failed' | 'running';
+export type SyncInterval = 15 | 30 | 60 | 360 | 1440;
+
+export interface SyncScheduleConfig {
+  sourceType: SourceType;
+  enabled: boolean;
+  intervalMinutes: SyncInterval;
+  lastSyncAt: string | null;
+  nextSyncAt: string | null;
+  lastSyncStatus: SyncStatus | null;
+  lastSyncError: string | null;
+  lastSyncCount: number | null;
+  lastSyncDuration: number | null;
+}
+
+export interface SyncResult {
+  sourceType: SourceType;
+  status: SyncStatus;
+  count: number;
+  duration: number;
+  error?: string;
+}
+
+export interface SyncIntervalOption {
+  value: SyncInterval;
+  label: string;
+}
+
+export const syncApi = {
+  // Get all sync schedules
+  getAllSchedules: () =>
+    fetchApi<Record<SourceType, SyncScheduleConfig>>('/sync/schedules'),
+
+  // Get schedule for a specific source
+  getSchedule: (sourceType: SourceType) =>
+    fetchApi<SyncScheduleConfig>(`/sync/schedule/${sourceType}`),
+
+  // Update schedule for a source
+  updateSchedule: (sourceType: SourceType, enabled: boolean, intervalMinutes?: SyncInterval) =>
+    fetchApi<SyncScheduleConfig>(`/sync/schedule/${sourceType}`, {
+      method: 'PUT',
+      body: JSON.stringify({ enabled, intervalMinutes }),
+    }),
+
+  // Trigger manual sync
+  triggerSync: (sourceType: SourceType) =>
+    fetchApi<SyncResult>(`/sync/trigger/${sourceType}`, {
+      method: 'POST',
+    }),
+
+  // Get available intervals
+  getIntervals: () =>
+    fetchApi<{ intervals: SyncIntervalOption[] }>('/sync/intervals'),
+};
+
+// ============================================
+// STATISTICS API
+// ============================================
+
+export interface OverviewStats {
+  azureMachines: number;
+  drMigrateServers: number;
+  matchedCount: number;
+  unmatchedAzure: number;
+  unmatchedDrMigrate: number;
+  matchPercentage: number;
+  autoMatchedCount: number;
+  manualMatchedCount: number;
+  lastAzureSync: string | null;
+  lastDrMigrateSync: string | null;
+}
+
+export interface SourceCounts {
+  azure: number;
+  drmigrate: number;
+  matched: number;
+  unmatched: number;
+}
+
+export interface MatchingStats {
+  total: number;
+  matched: number;
+  unmatched: number;
+  autoMatched: number;
+  manualMatched: number;
+  matchPercentage: number;
+  confidenceDistribution: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+}
+
+export interface MachineBreakdown {
+  byOS: Record<string, number>;
+  byWave: Record<string, number>;
+  byEnvironment: Record<string, number>;
+}
+
+export const statsApi = {
+  // Get overview statistics
+  getOverview: () =>
+    fetchApi<OverviewStats>('/stats/overview'),
+
+  // Get machine counts by source
+  getCounts: () =>
+    fetchApi<SourceCounts>('/stats/counts'),
+
+  // Get detailed matching statistics
+  getMatchingStats: () =>
+    fetchApi<MatchingStats>('/stats/matching'),
+
+  // Get machine breakdown
+  getBreakdown: () =>
+    fetchApi<MachineBreakdown>('/stats/breakdown'),
+};
+
 // Targets API
 export const targetsApi = {
   getRegions: () =>
