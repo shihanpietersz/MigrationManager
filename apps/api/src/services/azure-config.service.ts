@@ -150,5 +150,18 @@ export const azureConfigService = {
       },
     });
   },
+
+  /**
+   * Reset setup status - clears setupCompletedAt to allow re-running the wizard
+   */
+  async resetSetup(): Promise<AzureConfig> {
+    return prisma.azureConfig.update({
+      where: { id: 'default' },
+      data: {
+        setupCompletedAt: null,
+        updatedAt: new Date(),
+      },
+    });
+  },
 };
 

@@ -11,6 +11,7 @@ import {
   Cloud,
   RefreshCw,
   Server,
+  Database,
 } from 'lucide-react';
 import { WizardLayout, WizardNav, WizardAction } from '../components';
 import { settingsApi } from '@/lib/api';
@@ -20,6 +21,17 @@ import { cn } from '@/lib/utils';
 // Storage key for wizard data
 const STORAGE_KEY = 'setup-wizard-data';
 
+interface DrMigrateConfig {
+  enabled: boolean;
+  server: string;
+  database: string;
+  user: string;
+  password: string;
+  port: string;
+  connectionTested: boolean;
+  connectionSuccess: boolean;
+}
+
 interface WizardData {
   tenantId: string;
   clientId: string;
@@ -27,6 +39,7 @@ interface WizardData {
   subscriptionId: string;
   resourceGroup: string;
   migrateProjectName: string;
+  drMigrate?: DrMigrateConfig | null;
 }
 
 type ConnectionStatus = 'idle' | 'testing' | 'success' | 'error';
@@ -121,6 +134,23 @@ export default function SetupVerifyPage() {
       // Mark setup as complete
       await completeSetupMutation.mutateAsync();
       
+      // Save DrMigrate data source if configured
+      if (wizardData.drMigrate?.enabled) {
+        try {
+          const { dataSourcesApi } = await import('@/lib/api');
+          await dataSourcesApi.saveDrMigrateSource({
+            server: wizardData.drMigrate.server,
+            database: wizardData.drMigrate.database,
+            user: wizardData.drMigrate.user,
+            password: wizardData.drMigrate.password,
+            port: wizardData.drMigrate.port ? parseInt(wizardData.drMigrate.port, 10) : undefined,
+          });
+        } catch (drMigrateError) {
+          // Don't fail setup if DrMigrate save fails - user can configure later
+          console.warn('Failed to save DrMigrate data source:', drMigrateError);
+        }
+      }
+      
       // Sync machines from Azure Migrate
       try {
         const syncResponse = await settingsApi.syncAzureMachines();
@@ -149,12 +179,12 @@ export default function SetupVerifyPage() {
   };
 
   const handleBack = () => {
-    router.push('/setup/project');
+    router.push('/setup/data-enrichment');
   };
 
   if (!wizardData) {
     return (
-      <WizardLayout currentStep={3} title="Loading..." description="Loading your configuration...">
+      <WizardLayout currentStep={4} title="Loading..." description="Loading your configuration...">
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
@@ -166,7 +196,7 @@ export default function SetupVerifyPage() {
   if (setupPhase === 'syncing' || setupPhase === 'complete') {
     return (
       <WizardLayout
-        currentStep={3}
+        currentStep={4}
         title={setupPhase === 'syncing' ? 'Completing Setup...' : 'Setup Complete!'}
         description={setupPhase === 'syncing' 
           ? 'Syncing machines from Azure Migrate...' 
@@ -218,7 +248,7 @@ export default function SetupVerifyPage() {
 
   return (
     <WizardLayout
-      currentStep={3}
+      currentStep={4}
       title="Verify & Complete"
       description="Review your configuration and test the connection before completing setup."
     >
@@ -250,6 +280,37 @@ export default function SetupVerifyPage() {
               <SummaryRow label="Subscription ID" value={maskGuid(wizardData.subscriptionId)} />
               <SummaryRow label="Resource Group" value={wizardData.resourceGroup} />
               <SummaryRow label="Project Name" value={wizardData.migrateProjectName} />
+            </div>
+          </div>
+
+          {/* Assessment Data Section - uses mm-section-card pattern */}
+          <div className="mm-section-card">
+            <div className="flex items-center gap-2 px-6 py-4 border-b border-card-border bg-muted/30">
+              <Database className="h-4 w-4 text-primary" />
+              <span className="font-medium text-foreground">Assessment Data</span>
+            </div>
+            <div className="p-4 space-y-2">
+              <SummaryRow label="Azure Migrate Discovery" value="Enabled (Required)" />
+              <SummaryRow 
+                label="DrMigrate Assessment Engine" 
+                value={
+                  wizardData.drMigrate?.enabled 
+                    ? `${wizardData.drMigrate.server}/${wizardData.drMigrate.database}` 
+                    : 'Skipped'
+                } 
+              />
+              {wizardData.drMigrate?.enabled && (
+                <SummaryRow 
+                  label="Connection Status" 
+                  value={
+                    wizardData.drMigrate.connectionTested
+                      ? wizardData.drMigrate.connectionSuccess
+                        ? 'Verified'
+                        : 'Not verified'
+                      : 'Not tested'
+                  } 
+                />
+              )}
             </div>
           </div>
         </div>

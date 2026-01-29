@@ -4,7 +4,7 @@ import Papa from 'papaparse';
 
 export interface DataSourceInput {
   name: string;
-  type: 'database' | 'csv' | 'api';
+  type: 'database' | 'csv' | 'api' | 'drmigrate-db';
   connectionString?: string;
   apiEndpoint?: string;
   apiKey?: string;

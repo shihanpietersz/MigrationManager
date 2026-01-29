@@ -8,6 +8,7 @@ export const SETUP_STEPS: Step[] = [
   { id: 'welcome', title: 'Welcome', description: 'Get started' },
   { id: 'credentials', title: 'Credentials', description: 'Azure Service Principal' },
   { id: 'project', title: 'Project', description: 'Azure Migrate' },
+  { id: 'assessment', title: 'Assessment', description: 'DrMigrate connection' },
   { id: 'verify', title: 'Verify', description: 'Test & Complete' },
 ];
 

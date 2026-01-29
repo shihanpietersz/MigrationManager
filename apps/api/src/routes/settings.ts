@@ -82,6 +82,39 @@ export const settingsRoutes: FastifyPluginAsync = async (fastify) => {
     }
   );
 
+  // Reset setup - clears setupCompletedAt to allow re-running the wizard
+  fastify.post(
+    '/reset-setup',
+    {
+      schema: {
+        tags: ['Settings'],
+        summary: 'Reset initial setup status',
+        description: 'Clears the setup completion status, allowing the setup wizard to run again',
+      },
+    },
+    async (): Promise<ApiResponse<{ reset: boolean }>> => {
+      await azureConfigService.resetSetup();
+      
+      // Log activity
+      await activityService.log({
+        type: 'system',
+        action: 'reset',
+        title: 'Setup configuration reset',
+        description: 'Initial setup status has been cleared. Setup wizard will run on next visit.',
+        status: 'info',
+        entityType: 'config',
+        entityId: 'default',
+      });
+
+      return {
+        success: true,
+        data: {
+          reset: true,
+        },
+      };
+    }
+  );
+
   // Get Azure configuration
   fastify.get(
     '/azure',

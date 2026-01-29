@@ -305,6 +305,43 @@ export const dataSourcesApi = {
     startedAt: string;
     completedAt?: string;
   }>>('/data-sources/import/jobs'),
+
+  // DrMigrate SQL Server connection methods
+  testDrMigrateConnection: (config: {
+    server: string;
+    database: string;
+    user: string;
+    password: string;
+    port?: number;
+  }) =>
+    fetchApi<{ success: boolean; message: string; details?: { serverVersion?: string; databaseName?: string } }>(
+      '/data-sources/drmigrate/test',
+      {
+        method: 'POST',
+        body: JSON.stringify(config),
+      }
+    ),
+
+  saveDrMigrateSource: (config: {
+    name?: string;
+    server: string;
+    database: string;
+    user: string;
+    password: string;
+    port?: number;
+  }) =>
+    fetchApi<{
+      id: string;
+      name: string;
+      type: string;
+      status: string;
+      server: string;
+      database: string;
+      createdAt: string;
+    }>('/data-sources/drmigrate', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    }),
 };
 
 // Activity API
@@ -397,6 +434,11 @@ export const settingsApi = {
   
   completeSetup: () => 
     fetchApi<{ completedAt: string }>('/settings/setup-complete', {
+      method: 'POST',
+    }),
+
+  resetSetup: () =>
+    fetchApi<{ reset: boolean }>('/settings/reset-setup', {
       method: 'POST',
     }),
 

@@ -422,6 +422,151 @@ server-app-01,10.0.1.30,Red Hat Enterprise Linux 8,4,16384,200`;
       return csvTemplate;
     }
   );
+
+  // ============================================
+  // DrMigrate SQL Server Connection Endpoints
+  // ============================================
+
+  // Test DrMigrate SQL Server connection
+  fastify.post<{
+    Body: {
+      server: string;
+      database: string;
+      user: string;
+      password: string;
+      port?: number;
+    };
+  }>(
+    '/drmigrate/test',
+    {
+      schema: {
+        tags: ['Data Sources'],
+        summary: 'Test DrMigrate SQL Server connection',
+        description: 'Test connectivity to a DrMigrate SQL Server database before saving',
+        body: {
+          type: 'object',
+          required: ['server', 'database', 'user', 'password'],
+          properties: {
+            server: { type: 'string', minLength: 1, description: 'SQL Server hostname (e.g., MYSERVER\\SQLEXPRESS)' },
+            database: { type: 'string', minLength: 1, description: 'Database name (e.g., DrMigrate)' },
+            user: { type: 'string', minLength: 1, description: 'SQL authentication username' },
+            password: { type: 'string', minLength: 1, description: 'SQL authentication password' },
+            port: { type: 'number', minimum: 1, maximum: 65535, description: 'SQL Server port (default: 1433)' },
+          },
+        },
+      },
+    },
+    async (request): Promise<ApiResponse<{ success: boolean; message: string; details?: unknown }>> => {
+      const { drMigrateDbService } = await import('../services/drmigrate-db.service.js');
+      
+      const result = await drMigrateDbService.testConnection({
+        server: request.body.server,
+        database: request.body.database,
+        user: request.body.user,
+        password: request.body.password,
+        port: request.body.port,
+      });
+
+      return {
+        success: result.success,
+        data: {
+          success: result.success,
+          message: result.message,
+          details: result.details,
+        },
+      };
+    }
+  );
+
+  // Save DrMigrate connection as a data source
+  fastify.post<{
+    Body: {
+      name?: string;
+      server: string;
+      database: string;
+      user: string;
+      password: string;
+      port?: number;
+    };
+  }>(
+    '/drmigrate',
+    {
+      schema: {
+        tags: ['Data Sources'],
+        summary: 'Save DrMigrate SQL Server connection',
+        description: 'Save a DrMigrate SQL Server connection as a data source for importing migration plans',
+        body: {
+          type: 'object',
+          required: ['server', 'database', 'user', 'password'],
+          properties: {
+            name: { type: 'string', minLength: 1, maxLength: 100, description: 'Display name for the data source' },
+            server: { type: 'string', minLength: 1 },
+            database: { type: 'string', minLength: 1 },
+            user: { type: 'string', minLength: 1 },
+            password: { type: 'string', minLength: 1 },
+            port: { type: 'number', minimum: 1, maximum: 65535 },
+          },
+        },
+      },
+    },
+    async (request, reply): Promise<ApiResponse<unknown>> => {
+      const { drMigrateDbService } = await import('../services/drmigrate-db.service.js');
+      
+      // First test the connection
+      const testResult = await drMigrateDbService.testConnection({
+        server: request.body.server,
+        database: request.body.database,
+        user: request.body.user,
+        password: request.body.password,
+        port: request.body.port,
+      });
+
+      if (!testResult.success) {
+        reply.code(400);
+        return {
+          success: false,
+          error: {
+            code: 'CONNECTION_FAILED',
+            message: testResult.message,
+          },
+        };
+      }
+
+      // Serialize the connection config for storage
+      const connectionString = drMigrateDbService.serializeConfig({
+        server: request.body.server,
+        database: request.body.database,
+        user: request.body.user,
+        password: request.body.password,
+        port: request.body.port,
+      });
+
+      // Create the data source
+      const displayName = request.body.name || `DrMigrate - ${request.body.server}/${request.body.database}`;
+      
+      const source = await dataSourceService.create({
+        name: displayName,
+        type: 'drmigrate-db',
+        connectionString,
+      });
+
+      // Update status to connected since we just tested it
+      await dataSourceService.updateStatus(source.id, 'connected');
+
+      return {
+        success: true,
+        data: {
+          id: source.id,
+          name: source.name,
+          type: source.type,
+          status: 'connected',
+          server: request.body.server,
+          database: request.body.database,
+          createdAt: source.createdAt.toISOString(),
+        },
+      };
+    }
+  );
 };
 
 

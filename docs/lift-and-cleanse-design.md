@@ -1,4 +1,4 @@
-# Lift and Cleanse System - Technical Design Document
+s# Lift and Cleanse System - Technical Design Document
 
 > **Version:** 1.1  
 > **Status:** Design Review  

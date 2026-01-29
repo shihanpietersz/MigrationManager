@@ -129,7 +129,7 @@ export default function SetupProjectPage() {
 
   const handleNext = () => {
     if (validateAll()) {
-      saveAndNavigate('/setup/verify');
+      saveAndNavigate('/setup/data-enrichment');
     }
   };
 
